@@ -1,19 +1,62 @@
 <!DOCTYPE html>
-<html lang="en" class="[scrollbar-gutter:stable]">
-  <head>
+<html lang="en" class="h-full bg-gray-100 dark:bg-gray-900">
+<head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title suffix=" · Phoenix Framework">
-      <%= assigns[:page_title] || "SmartTrash" %>
+    <.live_title suffix=" · Technologies">
+        <%= assigns[:page_title] || "SmartTrash" %>
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
-    </script>
-    hjk
-  </head>
-  <body class="bg-white">
-
-    <%= @inner_content %>
-  </body>
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
+</head>
+<body class="h-full bg-gray-100 dark:bg-gray-900">
+    <!-- Top authentication bar -->
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <ul class="relative z-50 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end py-3">
+            <%= if @current_user do %>
+                <li class="text-sm text-gray-700 dark:text-gray-300">
+                    <%= @current_user.email %>
+                </li>
+                <li>
+                    <.link
+                        href={~p"/users/settings"}
+                        class="text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                    >
+                        Settings
+                    </.link>
+                </li>
+                <li>
+                    <.link
+                        href={~p"/users/log_out"}
+                        method="delete"
+                        class="text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                    >
+                        Log out
+                    </.link>
+                </li>
+            <% else %>
+                <li>
+                    <.link
+                        href={~p"/users/register"}
+                        class="text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                    >
+                        Register
+                    </.link>
+                </li>
+                <li>
+                    <.link
+                        href={~p"/users/log_in"}
+                        class="text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                    >
+                        Log in
+                    </.link>
+                </li>
+            <% end %>
+        </ul>
+    </div>
+    <div class="min-h-full">
+        <%= @inner_content %>
+    </div>
+</body>
 </html>
