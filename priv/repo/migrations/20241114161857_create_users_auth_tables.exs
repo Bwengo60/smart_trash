@@ -24,6 +24,7 @@ defmodule SmartTrash.Repo.Migrations.CreateUsersAuthTables do
       add :hashed_password, :string, null: false
       add :confirmed_at, :utc_datetime
       add :subscribed, :boolean
+      add :user_type, :string
       add :role_id, references(:roles_table, on_delete: :delete_all), null: false
 
       timestamps(type: :utc_datetime)
@@ -44,13 +45,20 @@ defmodule SmartTrash.Repo.Migrations.CreateUsersAuthTables do
     create unique_index(:users_tokens, [:context, :token])
 
     create table(:trash_table) do
-      add :trash_number, :string
+      add :trash_code, :string
       add :trash_levels, :integer
       add :active, :boolean, null: true
       add :collected, :boolean, default: true
       add :user_id, references(:users_table, on_delete: :delete_all)
 
 
+      timestamps()
+    end
+
+    create table(:manufactured_trash_bins) do
+      add :mac_address, :string
+      add :trash_code, :string
+      add :active, :boolean, default: true
       timestamps()
     end
 
@@ -66,6 +74,7 @@ defmodule SmartTrash.Repo.Migrations.CreateUsersAuthTables do
 
     create table(:subscriptions_table)do
       add :subscription_due, :naive_datetime
+      add :status, :string
       add :user_id, references(:users_table, on_delete: :delete_all), null: false
       add :subscription_package_id, references(:subscription_packages, on_delete: :delete_all), null: false
       timestamps()

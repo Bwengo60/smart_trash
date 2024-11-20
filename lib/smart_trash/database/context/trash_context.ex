@@ -10,13 +10,20 @@ defmodule SmartTrash.Database.Context.TrashContext do
   end
 
   def list_trash_bins do
-    %Trash{}
+    Trash
     |> Repo.all()
   end
 
   def list_active_trash_bins do
-    %Trash{}
+    Trash
     |> where([a], a.active == true)
+    |> Repo.all()
+  end
+
+  def list_trash_by_user(id) do
+    Trash
+    |> preload(:user)
+    |> where([a], a.user_id==^id)
     |> Repo.all()
   end
 

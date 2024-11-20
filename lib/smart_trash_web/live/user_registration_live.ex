@@ -3,8 +3,9 @@ defmodule SmartTrashWeb.UserRegistrationLive do
 
   alias SmartTrash.Accounts
   alias SmartTrash.Accounts.User
-  alias SmartTrash.Database.Context.SubscriptionContext
+  alias SmartTrash.Database.Context.TrashBinContext
   alias SmartTrash.Database.Context.{SubscriptionPackageContext}
+  alias SmartTrash.Database.Context.RolesContext
   alias Ecto.Multi
   alias SmartTrash.Database.Schema.Subscriptions
 
@@ -48,6 +49,37 @@ defmodule SmartTrashWeb.UserRegistrationLive do
             </ol>
           </nav>
         </div>
+
+        <div class="mb-4">
+          <%= if @current_step > 1 do %>
+            <button
+              type="button"
+              phx-click="previous_step"
+              class="flex items-center text-brand hover:text-brand/80"
+            >
+              <.icon name="hero-arrow-left" class="w-4 h-4 mr-2" />
+              Back to previous step
+            </button>
+          <% end %>
+        </div>
+
+        <%= if @show_success do %>
+          <div class="bg-green-50 p-6 rounded-xl text-center">
+            <div class="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <.icon name="hero-check" class="w-8 h-8 text-green-600" />
+            </div>
+            <h3 class="text-xl font-semibold text-green-900 mb-2">Registration Successful!</h3>
+            <p class="text-green-700 mb-4">
+              Your account has been created. Please check your email for confirmation instructions.
+            </p>
+            <.link
+              navigate={~p"/users/log_in"}
+              class="inline-block px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              Go to Login
+            </.link>
+          </div>
+        <% end %>
 
         <%= if @step_1 do %>
           <div class="space-y-6">
@@ -133,38 +165,59 @@ defmodule SmartTrashWeb.UserRegistrationLive do
         <% end %>
 
         <%= if @step_4 do %>
-          <div class="space-y-6">
-            <h2 class="text-2xl font-semibold text-center text-gray-900">Add Your Trash Bins</h2>
-            <form phx-submit="save_bins" class="space-y-4">
-              <%= for index <- 1..@bin_count do %>
-                <div class="flex gap-4">
-                  <div class="flex-grow">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                      Bin Code <%= index %>
-                    </label>
-                    <input
-                      type="text"
-                      name={"bin_#{index}"}
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-brand"
-                      required
-                    />
-                  </div>
-                  <%= if index == @bin_count do %>
-                    <button
-                      type="button"
-                      phx-click="add_bin"
-                      class="self-end px-4 py-2 text-brand border-2 border-brand rounded-lg hover:bg-brand/10"
-                    >
-                      Add Bin
-                    </button>
-                  <% end %>
-                </div>
-              <% end %>
+      <div class="space-y-6">
+        <h2 class="text-2xl font-semibold text-center text-gray-900">Add Your Trash Bins</h2>
+        <form phx-submit="save_bins" class="space-y-4">
+          <%= for index <- 1..@bin_count do %>
+            <div class="flex gap-4">
+              <div class="flex-grow">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Bin Code <%= index %>
+                </label>
+                <input
+                  type="text"
+                  name={"bin_#{index}"}
+                  value={Map.get(@bin_values, "bin_#{index}", "")}
+                  phx-change="validate_bin_code"
+                  phx-debounce="300"
+                  class={[
+                    "w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand",
+                    if(@bin_errors["bin_#{index}"], do: "border-red-500", else: "border-gray-300")
+                  ]}
+                  required
+                />
+                <%= if error = @bin_errors["bin_#{index}"] do %>
+                  <p class="mt-1 text-sm text-red-600"><%= error %></p>
+                <% end %>
+              </div>
+              <div class="flex gap-2 self-end">
+                <%= if index == @bin_count do %>
+                  <button
+                    type="button"
+                    phx-click="add_bin"
+                    class="px-4 py-2 text-brand border-2 border-brand rounded-lg hover:bg-brand/10"
+                  >
+                    Add Bin
+                  </button>
+                <% end %>
+                <%= if @bin_count > 1 do %>
+                  <button
+                    type="button"
+                    phx-click="remove_bin"
+                    phx-value-index={index}
+                    class="px-4 py-2 text-red-600 border-2 border-red-600 rounded-lg hover:bg-red-50"
+                  >
+                    Remove
+                  </button>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
 
-              <.button class="w-full mt-6">Continue</.button>
-            </form>
-          </div>
-        <% end %>
+          <.button class="w-full mt-6" disabled={!Enum.empty?(@bin_errors)}>Continue</.button>
+        </form>
+      </div>
+    <% end %>
 
         <%= if @step_5 do %>
           <div class="space-y-6">
@@ -224,18 +277,62 @@ defmodule SmartTrashWeb.UserRegistrationLive do
     socket =
       socket
       |> assign(:current_step, 1)
+      |> assign(:man_trash_list, TrashBinContext.list_active_man_trash)
       |> assign(:step_1, true)
       |> assign(:step_2, false)
       |> assign(:step_3, false)
       |> assign(:step_4, false)
       |> assign(:step_5, false)
       |> assign(:bin_count, 1)
+      |> assign(:bin_values, %{})
+      |> assign(:bin_errors, %{})
+      |> assign(:show_success, false)
       |> assign(:subscription_packages, subscription_packages)
       |> assign(:registration_data, %{})
       |> assign(:check_errors, false)
       |> assign_form(changeset)
 
-    {:ok, socket}
+    {:ok, socket, layout: false}
+  end
+
+  def handle_event("validate_bin_code", params, socket) do
+    # Extract the bin input that changed
+    {bin_name, bin_value} =
+      params
+      |> Enum.find(fn {key, _value} -> String.starts_with?(key, "bin_") end)
+      |> case do
+        {key, value} -> {key, value}
+        nil -> {nil, nil}
+      end
+
+    if bin_name do
+      bin_values = Map.put(socket.assigns.bin_values, bin_name, bin_value)
+
+      error = case validate_bin_code(bin_value, socket) do
+        :ok -> nil
+        {:error, message} -> message
+      end
+
+      bin_errors = if error,
+        do: Map.put(socket.assigns.bin_errors, bin_name, error),
+        else: Map.delete(socket.assigns.bin_errors, bin_name)
+
+      {:noreply,
+       socket
+       |> assign(:bin_values, bin_values)
+       |> assign(:bin_errors, bin_errors)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  # Helper function to validate bin code
+  defp validate_bin_code(""), do: :ok
+  defp validate_bin_code(code, socket) do
+    case Enum.find(socket.assigns.man_trash_list, fn trash -> trash.trash_code == code end) do
+      nil -> {:error, "Invalid bin code"}
+      _ -> :ok
+    end
   end
 
   def handle_event("step_1", %{"usr_type" => user_type}, socket) do
@@ -295,23 +392,79 @@ defmodule SmartTrashWeb.UserRegistrationLive do
     {:noreply, assign(socket, :bin_count, socket.assigns.bin_count + 1)}
   end
 
+  def handle_event("previous_step", _params, socket) do
+    {prev_step, new_assigns} = case socket.assigns.current_step do
+      2 -> {1, %{step_1: true, step_2: false}}
+      3 -> {2, %{step_2: true, step_3: false}}
+      4 -> {3, %{step_3: true, step_4: false}}
+      5 -> {4, %{step_4: true, step_5: false}}
+      _ -> {1, %{}}
+    end
+
+    {:noreply,
+     socket
+     |> assign(:current_step, prev_step)
+     |> assign(new_assigns)}
+  end
+
+  # Add handler for bin code validation
+
+
+  # Modified handle_event for removing bins
+  def handle_event("remove_bin", %{"index" => index}, socket) do
+    index = String.to_integer(index)
+
+    # Remove the bin and shift remaining values
+    bin_values =
+      socket.assigns.bin_values
+      |> Enum.reduce(%{}, fn {k, v}, acc ->
+        case Integer.parse(String.replace(k, "bin_", "")) do
+          {n, ""} when n > index ->
+            Map.put(acc, "bin_#{n-1}", v)
+          {n, ""} when n < index ->
+            Map.put(acc, "bin_#{n}", v)
+          _ ->
+            acc
+        end
+      end)
+
+    {:noreply,
+     socket
+     |> assign(:bin_count, socket.assigns.bin_count - 1)
+     |> assign(:bin_values, bin_values)
+     |> assign(:bin_errors, Map.drop(socket.assigns.bin_errors, ["bin_#{index}"]))}
+  end
+
   def handle_event("save_bins", params, socket) do
     bins =
       params
       |> Map.filter(fn {key, _} -> String.starts_with?(key, "bin_") end)
       |> Map.values()
 
-    registration_data = Map.put(socket.assigns.registration_data, :bins, bins)
 
-    {:noreply,
-     socket
-     |> assign(:registration_data, registration_data)
-     |> assign(:current_step, 5)
-     |> assign(:step_4, false)
-     |> assign(:step_5, true)}
+        registration_data = Map.put(socket.assigns.registration_data, :bins, bins)
+
+        {:noreply,
+        socket
+        |> assign(:registration_data, registration_data)
+        |> assign(:current_step, 5)
+        |> assign(:step_4, false)
+        |> assign(:step_5, true)}
+
   end
 
-  # ... previous code remains the same until the transaction handling ...
+  def handle_event("edit_registration", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:current_step, 1)
+     |> assign(:step_5, false)
+     |> assign(:step_1, true)}
+  end
+
+  def handle_event("validate", %{"user" => user_params}, socket) do
+    changeset = Accounts.change_user_registration(%User{}, user_params)
+    {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
+  end
 
   def handle_event("submit_registration", _params, socket) do
     %{registration_data: data} = socket.assigns
@@ -326,20 +479,21 @@ defmodule SmartTrashWeb.UserRegistrationLive do
         username: data.username,
         password: data.password,
         address: data.address,
-        type: data.user_type
+        role_id: RolesContext.get_role_by_name("client").id
       })
     end)
-    |> Multi.insert(:subscription, fn %{user: user} ->
+    |> Multi.insert(:subscriptions_table, fn %{user: user} ->
       Subscriptions.changeset(%Subscriptions{}, %{
         user_id: user.id,
         subscription_package_id: data.plan.id,
-        status: "active"
+        status: "active",
+        subscription_due: calculate_subscription_due(data.plan)  # Add this line
       })
     end)
-    |> Multi.insert_all(:bins, SmartTrash.Bins, fn %{user: user} ->
-      Enum.map(data.bins, fn bin_code ->
+    |> Multi.insert_all(:trash_table, SmartTrash.Database.Schema.Trash, fn %{user: user} ->
+      Enum.map(data.bins, fn trash_code ->
         %{
-          code: bin_code,
+          trash_code: trash_code,
           user_id: user.id,
           inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
           updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
@@ -370,17 +524,29 @@ defmodule SmartTrashWeb.UserRegistrationLive do
     end
   end
 
-  def handle_event("edit_registration", _params, socket) do
-    {:noreply,
-     socket
-     |> assign(:current_step, 1)
-     |> assign(:step_5, false)
-     |> assign(:step_1, true)}
+  # Add this helper function to calculate subscription due date
+  defp calculate_subscription_due(_plan) do
+     NaiveDateTime.add(NaiveDateTime.utc_now(), 30 * 24 * 60 * 60)  # Default to monthly
   end
 
-  def handle_event("validate", %{"user" => user_params}, socket) do
-    changeset = Accounts.change_user_registration(%User{}, user_params)
-    {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
+  defp transaction_error_message(failed_operation, failed_value) do
+    case failed_operation do
+      :user ->
+        case failed_value.errors do
+          [{:email, _}] -> "Email already taken"
+          [{:username, _}] -> "Username already taken"
+          _ -> "Error creating user account"
+        end
+
+      :subscription ->
+        "Error creating subscription"
+
+      :bins ->
+        "Error registering bins"
+
+      _ ->
+        "An unexpected error occurred"
+    end
   end
 
   # Helper functions

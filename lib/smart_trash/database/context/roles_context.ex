@@ -19,4 +19,15 @@ defmodule SmartTrash.Database.Context.RolesContext do
     |> Roles.changeset(attrs)
     |> Repo.insert()
   end
+
+  def get_role(id) do
+    Roles
+    |> Repo.get!(id)
+  end
+
+  def get_role_by_name(name) do
+    Roles
+    |> where([a], a.group== ^name)
+    |> Repo.one!()
+  end
 end

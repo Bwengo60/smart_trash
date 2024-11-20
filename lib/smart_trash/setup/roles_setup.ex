@@ -22,7 +22,7 @@ defmodule SmartTrash.Setup.RolesSetup do
         active: true
       },
       %{
-        group: "clients",
+        group: "client",
         permissions: [
           "trash_information",
           "user_profile",

@@ -1,6 +1,7 @@
 defmodule SmartTrash.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
+  alias SmartTrash.Database.Schema.Roles
 
   schema "users_table" do
     field :email, :string
@@ -8,7 +9,7 @@ defmodule SmartTrash.Accounts.User do
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
     field :confirmed_at, :utc_datetime
-
+    field :user_type, :string
     field :first_name, :string
     field :last_name, :string
     field :username, :string
@@ -16,7 +17,7 @@ defmodule SmartTrash.Accounts.User do
     field :address, :string
     field :active,:boolean, default: true
     field :subscribed, :boolean
-    field :role_id, :integer, default: 1
+    belongs_to :role, Roles
     timestamps(type: :utc_datetime)
   end
 
@@ -45,7 +46,7 @@ defmodule SmartTrash.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password, :first_name, :last_name, :username, :address, :active, :subscribed, :role_id, :phone_number])
+    |> cast(attrs, [:email, :password, :user_type, :first_name, :last_name, :username, :address, :active, :subscribed, :role_id, :phone_number])
     |> validate_email(opts)
     |> validate_password(opts)
   end

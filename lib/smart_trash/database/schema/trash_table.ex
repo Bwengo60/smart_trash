@@ -7,15 +7,16 @@ defmodule SmartTrash.Database.Schema.Trash do
     :trash_number,
     :trash_levels,
     :active,
-    :collected
+    :collected,
+    :user_id
   ]
 
   schema "trash_table" do
-    field :trash_number, :string
-    field :trash_levels, :integer
-    field :active, :boolean
+    field :trash_code, :string
+    field :trash_levels, :integer, default: 0
+    field :active, :boolean, default: true
     field :collected, :boolean, default: true
-    has_one :user, User, foreign_key: :users_table
+    belongs_to :user, User
 
     timestamps()
   end
