@@ -46,6 +46,8 @@ defmodule SmartTrash.Repo.Migrations.CreateUsersAuthTables do
 
     create table(:trash_table) do
       add :trash_code, :string
+      add :name, :string
+      add :collection_count, :integer, default: 0
       add :trash_levels, :integer
       add :active, :boolean, null: true
       add :collected, :boolean, default: true
@@ -67,7 +69,10 @@ defmodule SmartTrash.Repo.Migrations.CreateUsersAuthTables do
       add :description, :string
       add :amount, :integer
       add :type, :string
+      add :limit, :string
       add :active, :boolean, default: true
+      add :subscription_type, :string
+
 
       timestamps()
     end

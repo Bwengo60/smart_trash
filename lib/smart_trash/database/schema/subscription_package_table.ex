@@ -8,7 +8,9 @@ defmodule SmartTrash.Database.Schema.SubscriptionPackageTable do
     field :description, :string
     field :amount, :integer
     field :type, :string
+    field :limit, :string
     field :active, :boolean, default: true
+    field :subscription_type, :string
 
     timestamps()
   end

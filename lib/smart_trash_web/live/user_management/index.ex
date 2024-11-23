@@ -3,13 +3,17 @@ defmodule SmartTrashWeb.UserManagement.Index do
   alias SmartTrash.Accounts.User
   alias SmartTrash.Database.Schema.Roles
   alias SmartTrash.Repo
+  alias SmartTrash.Accounts
   import Ecto.Query
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
     users = list_users()
     roles = list_roles()
 
+    user = User
+           |> preload(:role)
+           |> Repo.get!(Accounts.get_user_by_session_token(session["user_token"]).id)
     socket = socket
       |> assign(:page_title, "User Management")
       |> assign(:users, users)
@@ -112,7 +116,10 @@ defmodule SmartTrashWeb.UserManagement.Index do
             <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <.form for={@form} id="user-form" phx-submit="save" class="space-y-6 p-6">
                 <.input field={@form[:first_name]} type="text" label="First Name" required />
+
                 <.input field={@form[:last_name]} type="text" label="Last Name" required />
+                <.input field={@form[:username]} type="text" label="Username" required />
+
                 <.input field={@form[:email]} type="email" label="Email" required />
                 <.input field={@form[:phone_number]} type="text" label="Phone Number" required />
                 <.input field={@form[:address]} type="text" label="Address" required />

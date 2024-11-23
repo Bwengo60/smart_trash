@@ -4,11 +4,13 @@ defmodule SmartTrash.Database.Schema.Trash do
   alias SmartTrash.Accounts.User
 
   @db_columns [
-    :trash_number,
+    :trash_code,
     :trash_levels,
     :active,
     :collected,
-    :user_id
+    :user_id,
+    :name,
+    :collection_count
   ]
 
   schema "trash_table" do
@@ -16,6 +18,8 @@ defmodule SmartTrash.Database.Schema.Trash do
     field :trash_levels, :integer, default: 0
     field :active, :boolean, default: true
     field :collected, :boolean, default: true
+    field :name, :string
+    field :collection_count, :integer, default: 0
     belongs_to :user, User
 
     timestamps()

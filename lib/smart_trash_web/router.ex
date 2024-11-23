@@ -7,10 +7,29 @@ defmodule SmartTrashWeb.Router do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_live_flash
-    plug :put_root_layout, html: {SmartTrashWeb.Layouts, :root}
+    # plug :put_root_layout, html: {SmartTrashWeb.Layouts, :app}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug :fetch_current_user
+  end
+
+
+
+
+  pipeline :client_layout do
+    plug :put_root_layout, html: {SmartTrashWeb.Layouts, :root}
+  end
+
+  pipeline :landing_layout do
+    plug :put_root_layout, html: {SmartTrashWeb.Layouts, :land}
+  end
+
+  pipeline :admin_layout do
+    plug :put_root_layout, html: {SmartTrashWeb.Layouts, :root}
+  end
+
+  pipeline :controller_layout do
+    plug :put_root_layout, html: {SmartTrashWeb.Layouts, :root}
   end
 
   pipeline :api do
@@ -25,7 +44,7 @@ defmodule SmartTrashWeb.Router do
   end
 
   scope "/", SmartTrashWeb do
-    pipe_through :browser
+    pipe_through [:browser, :landing_layout]
 
     get "/", PageController, :home
 
@@ -57,34 +76,19 @@ defmodule SmartTrashWeb.Router do
   ## Authentication routes
 
   scope "/", SmartTrashWeb do
-    pipe_through [:browser, :redirect_if_user_is_authenticated]
+    pipe_through [:browser, :client_layout, :require_authenticated_user]
 
-    live_session :redirect_if_user_is_authenticated,
-      on_mount: [{SmartTrashWeb.UserAuth, :redirect_if_user_is_authenticated}] do
-      live "/users/register", UserRegistrationLive, :new
-      live "/users/log_in", UserLoginLive, :new
-      live "/users/reset_password", UserForgotPasswordLive, :new
-      live "/users/reset_password/:token", UserResetPasswordLive, :edit
-    end
-
-    post "/users/log_in", UserSessionController, :create
-
-  end
-
-  scope "/", SmartTrashWeb do
-    pipe_through [:browser, :require_authenticated_user]
     scope "/user/roles", UserRoles do
       live "/", IndexLive, :index
     end
 
     live "/users", UserManagement.Index, :index
     live "/dashboard", DashboardLive, :index
+    live "/man/trash", ManufacturedTrashBins.Index, :index
+    live "/subscription/payment", SubscriptionPayment, :index
+    live "/trash/bin/management", ClientTrashManagement.Index, :index
+    live "/user/transactions", UserTransactions.Index, :index
 
-    live_session :require_authenticated_user,
-      on_mount: [{SmartTrashWeb.UserAuth, :ensure_authenticated}] do
-      live "/users/settings", UserSettingsLive, :edit
-      live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
-    end
   end
 
   scope "/", SmartTrashWeb do
@@ -97,5 +101,38 @@ defmodule SmartTrashWeb.Router do
       live "/users/confirm/:token", UserConfirmationLive, :edit
       live "/users/confirm", UserConfirmationInstructionsLive, :new
     end
+  end
+
+  ## Authentication routes
+
+  scope "/", SmartTrashWeb do
+    pipe_through [:browser, :landing_layout, :redirect_if_user_is_authenticated]
+
+    live "/users/register", UserRegistrationLive, :new
+    post "/users/register", UserRegistrationController, :create
+    get "/users/log_in", UserSessionController, :new
+    post "/users/log_in", UserSessionController, :create
+    get "/users/reset_password", UserResetPasswordController, :new
+    post "/users/reset_password", UserResetPasswordController, :create
+    get "/users/reset_password/:token", UserResetPasswordController, :edit
+    put "/users/reset_password/:token", UserResetPasswordController, :update
+  end
+
+  scope "/", SmartTrashWeb do
+    pipe_through [:browser, :client_layout, :require_authenticated_user]
+
+    get "/users/settings", UserSettingsController, :edit
+    put "/users/settings", UserSettingsController, :update
+    get "/users/settings/confirm_email/:token", UserSettingsController, :confirm_email
+  end
+
+  scope "/", SmartTrashWeb do
+    pipe_through [:browser]
+
+    delete "/users/log_out", UserSessionController, :delete
+    get "/users/confirm", UserConfirmationController, :new
+    post "/users/confirm", UserConfirmationController, :create
+    get "/users/confirm/:token", UserConfirmationController, :edit
+    post "/users/confirm/:token", UserConfirmationController, :update
   end
 end

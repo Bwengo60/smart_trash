@@ -45,6 +45,7 @@ defmodule SmartTrash.MixProject do
       {:phoenix_live_dashboard, "~> 0.8.3"},
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.2", runtime: Mix.env() == :dev},
+      {:timex, "~> 3.7"},
       {:heroicons,
        github: "tailwindlabs/heroicons",
        tag: "v2.1.1",

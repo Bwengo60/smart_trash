@@ -4,10 +4,16 @@ defmodule SmartTrashWeb.UserRoles.IndexLive do
     alias SmartTrash.Database.Schema.Roles
     alias SmartTrash.Repo
     import Ecto.Query
+    alias SmartTrash.Accounts
+    alias SmartTrash.Repo
 
     @impl true
-    def mount(_params, _session, socket) do
+    def mount(_params, session, socket) do
       roles = list_roles()
+
+      user = Accounts.User
+           |> preload(:role)
+           |> Repo.get!(Accounts.get_user_by_session_token(session["user_token"]).id)
 
       socket = socket
         |> assign(:page_title, "Roles Management")
@@ -15,6 +21,7 @@ defmodule SmartTrashWeb.UserRoles.IndexLive do
         |> assign(:search_term, "")
         |> assign(:show_modal, false)
         |> assign(:editing_role, nil)
+        |> assign(:current_user, user)
         |> assign_form(Roles.changeset(%Roles{}, %{}))
 
       {:ok, socket}
@@ -25,7 +32,7 @@ defmodule SmartTrashWeb.UserRoles.IndexLive do
       ~H"""
       <div class="space-y-12 divide-y">
         <%!-- <div class="relative py-3 sm:max-w-5xl sm:mx-auto"> --%>
-          <div class="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
+          <%!-- <div class="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20"> --%>
             <div class="max-w-4xl mx-auto">
               <div class="space-y-12 divide-y divide-gray-200">
                 <div class="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
@@ -97,7 +104,7 @@ defmodule SmartTrashWeb.UserRoles.IndexLive do
               </div>
             </div>
           <%!-- </div> --%>
-        </div>
+        <%!-- </div> --%>
 
         <%= if @show_modal do %>
           <div class="fixed z-10 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">

@@ -1,8 +1,10 @@
-defmodule SmartTrashWeb.UserAuth do
+defmodule SmartTrashWeb.UserAuthd do
   use SmartTrashWeb, :verified_routes
 
   import Plug.Conn
   import Phoenix.Controller
+  import Ecto.Query
+  alias SmartTrash.Repo
 
   alias SmartTrash.Accounts
 
@@ -93,18 +95,11 @@ defmodule SmartTrashWeb.UserAuth do
   def fetch_current_user(conn, _opts) do
     {user_token, conn} = ensure_user_token(conn)
     user = user_token && Accounts.get_user_by_session_token(user_token)
+    # user = user_token && Accounts.User
+    #        |> preload(:role)
+    #        |> Repo.get!(Accounts.get_user_by_session_token(user_token).id)
     assign(conn, :current_user, user)
   end
-
-  # def check_user_roles(conn) do
-  #   user = fetch_current_user(conn)
-  #   case user.role.group do
-  #     "client" ->
-
-  #     "super_admin" ->
-  #      "collector"  ->
-  #   end
-  # end
 
   defp ensure_user_token(conn) do
     if token = get_session(conn, :user_token) do

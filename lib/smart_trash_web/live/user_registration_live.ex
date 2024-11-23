@@ -495,6 +495,8 @@ defmodule SmartTrashWeb.UserRegistrationLive do
         %{
           trash_code: trash_code,
           user_id: user.id,
+          trash_levels: 0,
+          active: true,
           inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
           updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
         }
